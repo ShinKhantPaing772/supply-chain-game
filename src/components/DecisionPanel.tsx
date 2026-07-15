@@ -1,4 +1,4 @@
-import { ChevronDown, CircleDollarSign, Factory, Gauge, PackagePlus, Route, ShieldCheck, Sparkles, Truck } from 'lucide-react'
+import { ChevronDown, CircleDollarSign, Factory, Gauge, Link2, PackagePlus, Route, ShieldCheck, Sparkles, Truck, Unlink2 } from 'lucide-react'
 import { useState } from 'react'
 import { projectDemand } from '../game/engine'
 import { scenarioById, scenarios } from '../game/scenarios'
@@ -58,22 +58,43 @@ export function DecisionPanel({ game, onChange }: Props) {
   const scenario = scenarioById(game.scenarioId)
   const chapter = scenarios.findIndex((item) => item.id === game.scenarioId) + 1
   const [strategy, setStrategy] = useState<Strategy>('balanced')
+  const [mixLinked, setMixLinked] = useState(true)
+  const [manualShares, setManualShares] = useState<Record<string, number>>(() => currentShares(decision.supplierAllocations))
   const projection = projectDemand(scenario, game.day, decision.sellingPrice)
   const totalProcurement = Math.round(Object.values(decision.supplierAllocations).reduce((sum, quantity) => sum + quantity, 0))
   const shares = currentShares(decision.supplierAllocations)
+  const displayedShares = mixLinked ? shares : manualShares
+  const manualShareTotal = Object.values(manualShares).reduce((sum, value) => sum + value, 0)
   const purchaseEstimate = game.suppliers.reduce((sum, supplier) => sum + (decision.supplierAllocations[supplier.id] ?? 0) * supplier.unitCost, 0)
   const weightedCost = totalProcurement ? purchaseEstimate / totalProcurement : 0
   const expectedMargin = Math.round(decision.sellingPrice - weightedCost - 31)
 
-  const setTotalProcurement = (total: number) => onChange({ supplierAllocations: allocateByShares(total, shares) })
+  const setTotalProcurement = (total: number) => onChange({ supplierAllocations: allocateByShares(total, !mixLinked && manualShareTotal === 100 ? manualShares : shares) })
   const setSupplierShare = (supplierId: string, nextShare: number) => {
     const clamped = Math.min(100, Math.max(0, nextShare))
+    if (!mixLinked) {
+      const nextShares = { ...manualShares, [supplierId]: clamped }
+      setManualShares(nextShares)
+      if (Object.values(nextShares).reduce((sum, value) => sum + value, 0) === 100) onChange({ supplierAllocations: allocateByShares(totalProcurement, nextShares) })
+      return
+    }
     const otherIds = Object.keys(shares).filter((id) => id !== supplierId)
     const otherTotal = otherIds.reduce((sum, id) => sum + shares[id], 0)
     const remaining = 100 - clamped
     const nextShares = { ...shares, [supplierId]: clamped }
     otherIds.forEach((id) => { nextShares[id] = otherTotal ? remaining * shares[id] / otherTotal : remaining / otherIds.length })
     onChange({ supplierAllocations: allocateByShares(totalProcurement, nextShares) })
+  }
+  const toggleMixLink = () => {
+    if (mixLinked) {
+      setManualShares(shares)
+      setMixLinked(false)
+      return
+    }
+    const normalized = currentShares(manualShares)
+    setManualShares(normalized)
+    onChange({ supplierAllocations: allocateByShares(totalProcurement, normalized) })
+    setMixLinked(true)
   }
   const setProduction = (regularProduction: number) => onChange({ regularProduction, factoryRelease: Math.min(100, regularProduction), dcRelease: Math.min(100, Math.max(projection.expected, regularProduction)) })
   const setPrice = (sellingPrice: number) => {
@@ -86,11 +107,17 @@ export function DecisionPanel({ game, onChange }: Props) {
   const applyStrategy = (next: Strategy) => {
     setStrategy(next)
     const expected = projection.expected
-    const settings: Record<Strategy, Partial<PlayerDecision>> = {
-      'low-cost': { supplierAllocations: allocateByShares(totalProcurement, { atlas: 35, northstar: 15, harborworks: 50, nova: 0 }), overtimeProduction: 0, factoryRelease: Math.min(100, expected), dcRelease: Math.min(100, expected), safetyStocks: { rawMaterials: 55, factoryFinished: 25, distribution: 40, retailer: 30 }, transport: { procurement: 'standard', factoryToDc: 'standard', dcToRetailer: 'standard' } },
-      balanced: { supplierAllocations: allocateByShares(totalProcurement, { atlas: 35, northstar: 35, harborworks: 20, nova: 10 }), overtimeProduction: 0, factoryRelease: Math.min(100, expected + 8), dcRelease: Math.min(100, expected + 8), safetyStocks: { rawMaterials: 70, factoryFinished: 35, distribution: 55, retailer: 40 }, transport: { procurement: 'standard', factoryToDc: 'standard', dcToRetailer: 'standard' } },
-      'high-service': { supplierAllocations: allocateByShares(totalProcurement, { atlas: 20, northstar: 40, harborworks: 0, nova: 40 }), overtimeProduction: chapter >= 5 ? 10 : 0, factoryRelease: Math.min(100, expected + 20), dcRelease: Math.min(100, expected + 20), safetyStocks: { rawMaterials: 95, factoryFinished: 55, distribution: 75, retailer: 60 }, transport: { procurement: chapter >= 4 ? 'expedited' : 'standard', factoryToDc: chapter >= 4 ? 'expedited' : 'standard', dcToRetailer: 'standard' } },
+    const strategyShares: Record<Strategy, Record<string, number>> = {
+      'low-cost': { atlas: 35, northstar: 15, harborworks: 50, nova: 0 },
+      balanced: { atlas: 35, northstar: 35, harborworks: 20, nova: 10 },
+      'high-service': { atlas: 20, northstar: 40, harborworks: 0, nova: 40 },
     }
+    const settings: Record<Strategy, Partial<PlayerDecision>> = {
+      'low-cost': { supplierAllocations: allocateByShares(totalProcurement, strategyShares['low-cost']), overtimeProduction: 0, factoryRelease: Math.min(100, expected), dcRelease: Math.min(100, expected), safetyStocks: { rawMaterials: 55, factoryFinished: 25, distribution: 40, retailer: 30 }, transport: { procurement: 'standard', factoryToDc: 'standard', dcToRetailer: 'standard' } },
+      balanced: { supplierAllocations: allocateByShares(totalProcurement, strategyShares.balanced), overtimeProduction: 0, factoryRelease: Math.min(100, expected + 8), dcRelease: Math.min(100, expected + 8), safetyStocks: { rawMaterials: 70, factoryFinished: 35, distribution: 55, retailer: 40 }, transport: { procurement: 'standard', factoryToDc: 'standard', dcToRetailer: 'standard' } },
+      'high-service': { supplierAllocations: allocateByShares(totalProcurement, strategyShares['high-service']), overtimeProduction: chapter >= 5 ? 10 : 0, factoryRelease: Math.min(100, expected + 20), dcRelease: Math.min(100, expected + 20), safetyStocks: { rawMaterials: 95, factoryFinished: 55, distribution: 75, retailer: 60 }, transport: { procurement: chapter >= 4 ? 'expedited' : 'standard', factoryToDc: chapter >= 4 ? 'expedited' : 'standard', dcToRetailer: 'standard' } },
+    }
+    if (!mixLinked) setManualShares(strategyShares[next])
     onChange(settings[next])
   }
 
@@ -101,7 +128,7 @@ export function DecisionPanel({ game, onChange }: Props) {
 
       <section className="simpleSection"><div className="simpleHeading"><span>Core plan</span><small>Available from January</small></div><RangeControl label="Total purchasing" value={totalProcurement} max={180} icon={PackagePlus} onChange={setTotalProcurement} /><RangeControl label="Production quantity" value={decision.regularProduction} max={80} icon={Gauge} onChange={setProduction} /></section>
 
-      {chapter >= 2 ? <details className="progressiveGroup" open><summary><span><PackagePlus size={15} /> Supplier mix</span><strong>100%</strong><ChevronDown size={15} /></summary><div className="supplierMixBody">{game.suppliers.map((supplier) => <div className="shareControl" key={supplier.id}><div><strong>{supplier.name}</strong><small>${supplier.unitCost} · {supplier.leadTime}d</small></div><input aria-label={`${supplier.name} share slider`} type="range" min="0" max="100" step="1" value={shares[supplier.id]} onChange={(event) => setSupplierShare(supplier.id, Number(event.target.value))} /><span className="numberInputWrap"><input aria-label={`${supplier.name} share value`} type="number" min="0" max="100" step="1" value={shares[supplier.id]} onChange={(event) => setSupplierShare(supplier.id, Number(event.target.value))} /><small>%</small></span></div>)}</div></details> : <div className="nextUnlock"><span>February unlock</span><strong>Supplier allocation</strong><small>January uses the selected strategy’s supplier mix.</small></div>}
+      {chapter >= 2 ? <details className="progressiveGroup" open><summary><span><PackagePlus size={15} /> Supplier mix</span><strong className={!mixLinked && manualShareTotal !== 100 ? 'shareTotalWarning' : ''}>{mixLinked ? 'Linked' : `${manualShareTotal}%`}</strong><ChevronDown size={15} /></summary><div className="supplierMixBody"><div className="mixToolbar"><div><strong>{mixLinked ? 'Percentages are linked' : 'Independent percentages'}</strong><small>{mixLinked ? 'Changing one automatically balances the others.' : manualShareTotal === 100 ? 'Custom mix applied.' : `Adjust the mix to 100% to apply it (${100 - manualShareTotal > 0 ? '+' : ''}${100 - manualShareTotal}% remaining).`}</small></div><button type="button" className={mixLinked ? '' : 'active'} onClick={toggleMixLink} aria-label={mixLinked ? 'Unlink supplier percentages' : 'Link supplier percentages'}>{mixLinked ? <><Unlink2 size={13} /> Unlink</> : <><Link2 size={13} /> Link</>}</button></div>{game.suppliers.map((supplier) => <div className="shareControl" key={supplier.id}><div><strong>{supplier.name}</strong><small>${supplier.unitCost} · {supplier.leadTime}d</small></div><input aria-label={`${supplier.name} share slider`} type="range" min="0" max="100" step="1" value={displayedShares[supplier.id]} onChange={(event) => setSupplierShare(supplier.id, Number(event.target.value))} /><span className="numberInputWrap"><input aria-label={`${supplier.name} share value`} type="number" min="0" max="100" step="1" value={displayedShares[supplier.id]} onChange={(event) => setSupplierShare(supplier.id, Number(event.target.value))} /><small>%</small></span></div>)}</div></details> : <div className="nextUnlock"><span>February unlock</span><strong>Supplier allocation</strong><small>January uses the selected strategy’s supplier mix.</small></div>}
 
       {chapter >= 3 ? <section className="simpleSection pricingSimple"><div className="simpleHeading"><span>Market price</span><small>Demand responds immediately</small></div><RangeControl label="Retail selling price" value={decision.sellingPrice} min={100} max={190} step={5} suffix="$" icon={CircleDollarSign} onChange={setPrice} /><div className="demandPreview"><div><span>Projected demand</span><strong>{projection.low}–{projection.high}</strong><small>Expected {projection.expected}</small></div><div><span>Expected margin</span><strong className={expectedMargin >= 0 ? 'positive' : 'negative'}>{expectedMargin >= 0 ? '+' : '−'}${Math.abs(expectedMargin)}</strong><small>Before holding costs</small></div></div></section> : <div className="nextUnlock"><span>March unlock</span><strong>Price-sensitive demand</strong><small>Price remains fixed at ${decision.sellingPrice} until then.</small></div>}
 
