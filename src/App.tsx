@@ -15,13 +15,22 @@ function Home() {
   const start = useGameStore((state) => state.startScenario)
   const unlocked = useGameStore((state) => state.unlockedScenarioIds)
   const bestScores = useGameStore((state) => state.bestScores)
+  const unlockedScenarios = scenarios.filter((scenario) => unlocked.includes(scenario.id))
+  const nextScenario = unlockedScenarios.find((scenario) => !bestScores[scenario.id]) ?? unlockedScenarios.at(-1) ?? scenarios[0]
+  const hasCampaignProgress = nextScenario.id !== scenarios[0].id || Boolean(bestScores[nextScenario.id])
+  const exploreCampaign = () => document.querySelector('#campaign')?.scrollIntoView({ behavior: 'smooth' })
+
   return <main className="homeScreen">
-    <header className="homeHeader"><Logo /><div className="headerTag"><span /> SIX-MONTH LEARNING CAMPAIGN</div></header>
+    <header className="homeHeader"><Logo /><div className="homeHeaderActions"><div className="headerTag"><span /> SIX-MONTH LEARNING CAMPAIGN</div><button className="headerPlayButton" onClick={() => start(nextScenario.id)}><Play size={13} fill="currentColor" /> Play now</button></div></header>
     <section className="hero">
-      <div className="heroCopy"><p className="eyebrow lime">END-TO-END OPERATIONS STRATEGY</p><h1>Every decision<br />moves the chain.</h1><p className="heroLead">Source across four suppliers, convert materials into finished goods, set your price, and protect customer service when the unexpected happens.</p><div className="heroStats"><div><strong>6</strong><span>Monthly chapters</span></div><div><strong>30</strong><span>Calendar days each</span></div><div><strong>4</strong><span>Supplier profiles</span></div></div></div>
-      <div className="heroVisual" aria-hidden="true"><div className="chainLine" /><div className="heroNode n1"><span>01</span><PackageCheck /></div><div className="heroNode n2"><span>02</span><Gauge /></div><div className="heroNode n3"><span>03</span><ShieldCheck /></div><div className="pulseRing" /><p>SOURCE <i /> FLOW <i /> ADAPT</p></div>
+      <div className="heroCopy"><p className="eyebrow lime">A HANDS-ON SUPPLY CHAIN CHALLENGE</p><h1>Can you keep<br />the chain moving?</h1><p className="heroLead">Step into the planner’s seat. Choose suppliers, set production and price, then keep customers served when demand shifts and disruptions strike.</p>
+        <div className="heroActions"><button className="heroPrimaryButton" onClick={() => start(nextScenario.id)}><Play size={16} fill="currentColor" /><span>{hasCampaignProgress ? `Continue ${nextScenario.month}` : 'Start the campaign'}</span><ArrowRight size={17} /></button><button className="heroSecondaryButton" onClick={exploreCampaign}>Explore the six months</button></div>
+        <div className="heroReassurance"><span><Check size={13} /> Learn as you play</span><span><Check size={13} /> No sign-up</span><span><Check size={13} /> Progress saves automatically</span></div>
+        <div className="heroStats"><div><strong>6</strong><span>Monthly chapters</span></div><div><strong>30</strong><span>Decisions per chapter</span></div><div><strong>4</strong><span>Supplier strategies</span></div></div>
+      </div>
+      <div className="heroVisual" aria-hidden="true"><div className="heroChallenge"><span>YOUR NEXT MISSION</span><strong>{nextScenario.month} — {nextScenario.name}</strong><small>Balance service, profit, and resilience.</small></div><div className="chainLine"><i className="flowSignal" /></div><div className="heroNode n1"><span>01</span><PackageCheck /></div><div className="heroNode n2"><span>02</span><Gauge /></div><div className="heroNode n3"><span>03</span><ShieldCheck /></div><div className="pulseRing" /><p>SOURCE <i /> FLOW <i /> ADAPT</p></div>
     </section>
-    <section className="scenarioSection"><div className="sectionHeading"><div><p className="eyebrow">YOUR OPERATING YEAR</p><h2>January starts here.</h2></div><p>Each month introduces a management layer. Complete one chapter to unlock the next.</p></div>
+    <section className="scenarioSection" id="campaign"><div className="sectionHeading"><div><p className="eyebrow">YOUR OPERATING YEAR</p><h2>{hasCampaignProgress ? 'Choose your next challenge.' : 'January starts here.'}</h2></div><p>Each month introduces a management layer. Complete one chapter to unlock the next.</p></div>
       <div className="scenarioGrid monthGrid">{scenarios.map((scenario, index) => {
         const isUnlocked = unlocked.includes(scenario.id), score = bestScores[scenario.id]
         return <article className={`scenarioCard ${!isUnlocked ? 'locked' : ''}`} key={scenario.id}>
