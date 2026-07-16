@@ -106,7 +106,7 @@ The final report reveals the event timeline and highlights the decisions that mo
 - [Vitest](https://vitest.dev/) and Testing Library for automated tests
 - CSS with responsive design tokens and reduced-motion support
 
-The game runs entirely in the browser. Progress, unlocked chapters, and best scores are stored locally without accounts or a backend.
+The game runs entirely in the browser. The active chapter is automatically saved after every decision and simulated day, while unlocked chapters and best scores are also stored locally without accounts or a backend.
 
 ## Getting Started
 

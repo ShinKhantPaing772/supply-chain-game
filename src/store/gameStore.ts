@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { advanceDay, applyDecision, calculateScore, createGame } from '../game/engine'
 import { scenarioById, scenarios } from '../game/scenarios'
 import type { GameState, PlayerDecision } from '../game/types'
+import { loadSession, saveSession } from './sessionPersistence'
 
 const STORAGE_KEY = 'scm-game-progress-v2'
 const LEGACY_STORAGE_KEY = 'scm-game-progress-v1'
@@ -55,6 +56,7 @@ interface GameStore extends SavedProgress {
   game: GameState | null
   tutorialOpen: boolean
   startScenario: (id: string) => void
+  resumeGame: () => void
   updateDecision: (decision: Partial<PlayerDecision>) => void
   nextDay: () => void
   restart: () => void
@@ -64,24 +66,42 @@ interface GameStore extends SavedProgress {
 }
 
 const progress = loadProgress()
+const session = loadSession()
 const scrollToTop = () => queueMicrotask(() => window.scrollTo({ top: 0, left: 0 }))
 
 export const useGameStore = create<GameStore>((set, get) => ({
   ...progress,
-  screen: 'home',
-  game: null,
-  tutorialOpen: false,
+  screen: session?.screen ?? 'home',
+  game: session?.game ?? null,
+  tutorialOpen: session?.tutorialOpen ?? false,
   startScenario: (id) => {
     const scenario = scenarioById(id)
-    set({ game: createGame(scenario), screen: 'game', tutorialOpen: !get().tutorialComplete && id === 'january' })
+    const game = createGame(scenario)
+    const tutorialOpen = !get().tutorialComplete && id === 'january'
+    saveSession('game', game, tutorialOpen)
+    set({ game, screen: 'game', tutorialOpen })
     scrollToTop()
   },
-  updateDecision: (decision) => set((state) => state.game ? { game: applyDecision(state.game, decision) } : {}),
+  resumeGame: () => {
+    const game = get().game
+    if (!game) return
+    const screen = game.status === 'finished' ? 'debrief' : 'game'
+    saveSession(screen, game, false)
+    set({ screen, tutorialOpen: false })
+    scrollToTop()
+  },
+  updateDecision: (decision) => set((state) => {
+    if (!state.game) return {}
+    const game = applyDecision(state.game, decision)
+    saveSession('game', game, state.tutorialOpen)
+    return { game }
+  }),
   nextDay: () => {
     const game = get().game
     if (!game) return
     const next = advanceDay(game)
     if (next.status !== 'finished') {
+      saveSession('game', next, false)
       set({ game: next })
       return
     }
@@ -92,24 +112,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const bestScores = { ...get().bestScores, [next.scenarioId]: Math.max(score, get().bestScores[next.scenarioId] ?? 0) }
     const saved = { version: 2 as const, tutorialComplete: true, unlockedScenarioIds, bestScores }
     saveProgress(saved)
+    saveSession('debrief', next, false)
     set({ game: next, screen: 'debrief', ...saved })
     scrollToTop()
   },
   restart: () => {
     const game = get().game
     if (game) {
-      set({ game: createGame(scenarioById(game.scenarioId)), screen: 'game' })
+      const restarted = createGame(scenarioById(game.scenarioId))
+      saveSession('game', restarted, false)
+      set({ game: restarted, screen: 'game' })
       scrollToTop()
     }
   },
   goHome: () => {
-    set({ screen: 'home', game: null, tutorialOpen: false })
+    const game = get().game
+    if (game) saveSession('home', game, false)
+    set({ screen: 'home', tutorialOpen: false })
     scrollToTop()
   },
-  openTutorial: () => set({ tutorialOpen: true }),
+  openTutorial: () => {
+    const game = get().game
+    if (game) saveSession(get().screen, game, true)
+    set({ tutorialOpen: true })
+  },
   closeTutorial: () => {
     const saved = { version: 2 as const, tutorialComplete: true, unlockedScenarioIds: get().unlockedScenarioIds, bestScores: get().bestScores }
     saveProgress(saved)
+    const game = get().game
+    if (game) saveSession(get().screen, game, false)
     set({ tutorialOpen: false, tutorialComplete: true })
   },
 }))
