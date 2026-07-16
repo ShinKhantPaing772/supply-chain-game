@@ -1,9 +1,11 @@
-import { AlertTriangle, ArrowLeft, ArrowRight, BarChart3, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock3, Gauge, HelpCircle, PackageCheck, Play, Radar, RotateCcw, ShieldCheck, Sparkles, Target, TrendingUp, Trophy } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, BarChart3, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock3, Gauge, HelpCircle, PackageCheck, Play, Radar, RotateCcw, ShieldCheck, Sparkles, Target, Trash2, TrendingUp, Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { calculateForecastAccuracy, calculateKpis, calculateScore, projectDemand } from './game/engine'
 import { scenarioById, scenarios } from './game/scenarios'
 import { useGameStore } from './store/gameStore'
 import { DecisionPanel } from './components/DecisionPanel'
 import { Logo } from './components/Logo'
+import { LegalPage, type LegalPageKind } from './components/LegalPage'
 import { PerformanceChart } from './components/PerformanceChart'
 import { SupplyMap } from './components/SupplyMap'
 import { TutorialModal } from './components/TutorialModal'
@@ -14,9 +16,13 @@ const money = (value: number) => `${value < 0 ? '−' : ''}$${Math.abs(Math.roun
 function Home() {
   const start = useGameStore((state) => state.startScenario)
   const resume = useGameStore((state) => state.resumeGame)
+  const deleteScenarioProgress = useGameStore((state) => state.deleteScenarioProgress)
+  const deleteAllProgress = useGameStore((state) => state.deleteAllProgress)
   const activeGame = useGameStore((state) => state.game)
+  const savedSessions = useGameStore((state) => state.savedSessions)
   const unlocked = useGameStore((state) => state.unlockedScenarioIds)
   const bestScores = useGameStore((state) => state.bestScores)
+  const [deleteTarget, setDeleteTarget] = useState<string | 'all' | null>(null)
   const unlockedScenarios = scenarios.filter((scenario) => unlocked.includes(scenario.id))
   const nextScenario = unlockedScenarios.find((scenario) => !bestScores[scenario.id]) ?? unlockedScenarios.at(-1) ?? scenarios[0]
   const activeScenario = activeGame ? scenarioById(activeGame.scenarioId) : null
@@ -25,6 +31,13 @@ function Home() {
   const playFeatured = () => activeGame ? resume() : start(nextScenario.id)
   const featuredAction = activeGame?.status === 'finished' ? `View ${featuredScenario.month} report` : activeGame ? `Resume ${featuredScenario.month} · Day ${activeGame.day}` : 'Start the campaign'
   const exploreCampaign = () => document.querySelector('#campaign')?.scrollIntoView({ behavior: 'smooth' })
+  const deleteTargetScenario = deleteTarget && deleteTarget !== 'all' ? scenarioById(deleteTarget) : null
+  const hasSavedProgress = Object.keys(savedSessions).length > 0 || unlocked.length > 1 || Object.keys(bestScores).length > 0
+  const confirmDelete = () => {
+    if (deleteTarget === 'all') deleteAllProgress()
+    else if (deleteTarget) deleteScenarioProgress(deleteTarget)
+    setDeleteTarget(null)
+  }
 
   return <main className="homeScreen">
     <header className="homeHeader"><Logo /><div className="homeHeaderActions"><div className="headerTag"><span /> SIX-MONTH LEARNING CAMPAIGN</div><button className="headerPlayButton" onClick={playFeatured}><Play size={13} fill="currentColor" /> {activeGame ? 'Resume' : 'Play now'}</button></div></header>
@@ -38,16 +51,17 @@ function Home() {
     </section>
     <section className="scenarioSection" id="campaign"><div className="sectionHeading"><div><p className="eyebrow">YOUR OPERATING YEAR</p><h2>{hasCampaignProgress ? 'Choose your next challenge.' : 'January starts here.'}</h2></div><p>Each month introduces a management layer. Complete one chapter to unlock the next.</p></div>
       <div className="scenarioGrid monthGrid">{scenarios.map((scenario, index) => {
-        const isUnlocked = unlocked.includes(scenario.id), score = bestScores[scenario.id]
+        const isUnlocked = unlocked.includes(scenario.id), score = bestScores[scenario.id], savedSession = savedSessions[scenario.id]
         return <article className={`scenarioCard ${!isUnlocked ? 'locked' : ''}`} key={scenario.id}>
           <div className="scenarioNumber">{String(index + 1).padStart(2, '0')}</div><div className="scenarioMeta"><span>{scenario.month}</span><span>{scenario.difficulty}</span><span>30 days</span></div><p className="chapterLabel">CHAPTER {index + 1}</p><h3>{scenario.name}</h3><p>{scenario.description}</p>
           <div className="mechanicTags">{scenario.introducedMechanics.map((mechanic) => <span key={mechanic}>{mechanic}</span>)}</div>
           <ul>{scenario.objectives.slice(0, 2).map((objective) => <li key={objective}><Check size={14} />{objective}</li>)}</ul>
-          <div className="scenarioFooter">{activeGame?.scenarioId === scenario.id && activeGame.status === 'playing' ? <span>Day {activeGame.day} saved</span> : score ? <span className="bestScore"><Trophy size={15} /> Best {score}</span> : <span>{isUnlocked ? 'Ready to begin' : 'Complete previous month'}</span>}<button disabled={!isUnlocked} onClick={() => activeGame?.scenarioId === scenario.id ? resume() : start(scenario.id)} aria-label={`${activeGame?.scenarioId === scenario.id ? 'Resume' : 'Play'} ${scenario.month} — ${scenario.name}`}>{isUnlocked ? <><Play size={17} fill="currentColor" /> {activeGame?.scenarioId === scenario.id ? 'Resume' : 'Play'}</> : 'Locked'}</button></div>
+          <div className="scenarioFooter">{savedSession ? <span>{savedSession.game.status === 'finished' ? 'Final report saved' : `Day ${savedSession.game.day} saved`}</span> : score ? <span className="bestScore"><Trophy size={15} /> Best {score}</span> : <span>{isUnlocked ? 'Ready to begin' : 'Complete previous month'}</span>}<div className="scenarioActions">{savedSession && <button className="deleteSaveButton" onClick={() => setDeleteTarget(scenario.id)} aria-label={`Delete ${scenario.month} saved game`}><Trash2 size={15} /></button>}<button disabled={!isUnlocked} onClick={() => savedSession ? resume(scenario.id) : start(scenario.id)} aria-label={`${savedSession ? savedSession.game.status === 'finished' ? 'View report for' : 'Resume' : 'Play'} ${scenario.month} — ${scenario.name}`}>{isUnlocked ? <><Play size={17} fill="currentColor" /> {savedSession ? savedSession.game.status === 'finished' ? 'Report' : 'Resume' : 'Play'}</> : 'Locked'}</button></div></div>
         </article>
       })}</div>
     </section>
-    <footer className="homeFooter"><span>Understand the inventory. Price the market. Prepare for uncertainty.</span><span>SCM / CAMPAIGN 01</span></footer>
+    <footer className="homeFooter"><span>Understand the inventory. Price the market. Prepare for uncertainty.</span><div className="homeFooterActions"><nav className="legalLinks" aria-label="Legal"><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>{hasSavedProgress && <button onClick={() => setDeleteTarget('all')}><Trash2 size={13} /> Delete all progress</button>}<span>SCM / CAMPAIGN 01</span></div></footer>
+    {deleteTarget && <div className="progressDialogBackdrop"><section className="progressDialog" role="dialog" aria-modal="true" aria-labelledby="delete-progress-title"><span className="progressDialogIcon"><AlertTriangle size={23} /></span><p className="eyebrow">PERMANENT ACTION</p><h2 id="delete-progress-title">{deleteTarget === 'all' ? 'Delete all game progress?' : `Delete ${deleteTargetScenario?.month} progress?`}</h2><p>{deleteTarget === 'all' ? 'This removes every saved month, unlocked chapter, tutorial preference, and best score from this browser.' : `This removes the saved ${deleteTargetScenario?.month} run and its pending decisions. Unlocked chapters and best scores will remain.`}</p><div><button className="secondaryButton" onClick={() => setDeleteTarget(null)}>Keep progress</button><button className="dangerButton" onClick={confirmDelete}><Trash2 size={15} /> {deleteTarget === 'all' ? 'Delete everything' : 'Delete saved game'}</button></div></section></div>}
   </main>
 }
 
@@ -110,5 +124,13 @@ function Debrief() {
 
 export default function App() {
   const screen = useGameStore((state) => state.screen), tutorialOpen = useGameStore((state) => state.tutorialOpen)
+  const getLegalRoute = (): LegalPageKind | null => window.location.hash === '#/privacy' ? 'privacy' : window.location.hash === '#/terms' ? 'terms' : null
+  const [legalRoute, setLegalRoute] = useState<LegalPageKind | null>(getLegalRoute)
+  useEffect(() => {
+    const updateRoute = () => setLegalRoute(getLegalRoute())
+    window.addEventListener('hashchange', updateRoute)
+    return () => window.removeEventListener('hashchange', updateRoute)
+  }, [])
+  if (legalRoute) return <LegalPage kind={legalRoute} />
   return <>{screen === 'home' && <Home />}{screen === 'game' && <Game />}{screen === 'debrief' && <Debrief />}{tutorialOpen && <TutorialModal />}</>
 }

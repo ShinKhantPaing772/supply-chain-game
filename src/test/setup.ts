@@ -7,3 +7,4 @@ class ResizeObserverMock {
 }
 
 Object.defineProperty(globalThis, 'ResizeObserver', { value: ResizeObserverMock })
+Object.defineProperty(window, 'scrollTo', { value: () => undefined, writable: true })

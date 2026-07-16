@@ -106,7 +106,7 @@ The final report reveals the event timeline and highlights the decisions that mo
 - [Vitest](https://vitest.dev/) and Testing Library for automated tests
 - CSS with responsive design tokens and reduced-motion support
 
-The game runs entirely in the browser. The active chapter is automatically saved after every decision and simulated day, while unlocked chapters and best scores are also stored locally without accounts or a backend.
+The game runs entirely in the browser. Every chapter has its own save slot and is automatically saved after each decision and simulated day. Players can switch between saved months, delete an individual run, or reset all locally stored progress without accounts or a backend.
 
 ## Getting Started
 
@@ -171,3 +171,8 @@ npm test
 ## Repository
 
 [github.com/ShinKhantPaing772/supply-chain-game](https://github.com/ShinKhantPaing772/supply-chain-game)
+
+## Legal
+
+- [Privacy Policy](https://scm.npaing.com/#/privacy)
+- [Terms of Service](https://scm.npaing.com/#/terms)
