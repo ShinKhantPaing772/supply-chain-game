@@ -2,6 +2,7 @@ import { Background, BaseEdge, Controls, EdgeLabelRenderer, getBezierPath, Handl
 import { Boxes, Factory, Plane, ShoppingBag, Ship, TrainFront, Truck, Users } from 'lucide-react'
 import { memo, useEffect, useMemo } from 'react'
 import type { GameState, NodeKind } from '../game/types'
+import { PRODUCT } from '../game/product'
 
 interface FacilityData extends Record<string, unknown> { label: string; kind: NodeKind; raw: number; finished: number; inbound: number; capacity: number; backlog: number; price: number; demand: number; fulfilled: number; health: 'healthy' | 'warning' | 'critical' }
 interface SupplierData extends Record<string, unknown> { label: string; available: number; ordered: number; leadTime: number; reliability: number; yield: number; routeLabel: string; portExposed: boolean; risk: boolean; outcome: string }
@@ -18,10 +19,10 @@ const SupplierNode = memo(({ data }: NodeProps<Node<SupplierData>>) => {
 const FacilityNode = memo(({ data }: NodeProps<Node<FacilityData>>) => {
   const Icon = facilityIcons[data.kind]
   return <div className={`facilityNode detailed ${data.health}`}><Handle type="target" position={Position.Left} /><div className="facilityTop"><span className="facilityIcon"><Icon size={18} /></span><span className="statusDot" /></div><p>{data.label}</p>
-    {data.kind === 'manufacturer' && <div className="stockRows"><span><small>Raw materials</small><strong>{Math.round(data.raw)}</strong></span><span><small>Finished goods</small><strong>{Math.round(data.finished)}</strong></span><span><small>Inbound</small><strong>{Math.round(data.inbound)}</strong></span></div>}
-    {data.kind === 'distribution' && <div className="stockRows"><span><small>Finished goods</small><strong>{Math.round(data.finished)}</strong></span><span><small>Inbound</small><strong>{Math.round(data.inbound)}</strong></span></div>}
-    {data.kind === 'retailer' && <div className="stockRows"><span><small>Sellable inventory</small><strong>{Math.round(data.finished)}</strong></span><span><small>Price</small><strong>${data.price}</strong></span><span><small>Backlog</small><strong>{Math.round(data.backlog)}</strong></span></div>}
-    {data.kind === 'customer' && <div className="stockRows"><span><small>Demand</small><strong>{Math.round(data.demand)}</strong></span><span><small>Fulfilled</small><strong>{Math.round(data.fulfilled)}</strong></span><span><small>Waiting</small><strong>{Math.round(data.backlog)}</strong></span></div>}
+    {data.kind === 'manufacturer' && <div className="stockRows"><span><small>Component kits</small><strong>{Math.round(data.raw)}</strong></span><span><small>{PRODUCT.shortName} speakers</small><strong>{Math.round(data.finished)}</strong></span><span><small>Inbound kits</small><strong>{Math.round(data.inbound)}</strong></span></div>}
+    {data.kind === 'distribution' && <div className="stockRows"><span><small>{PRODUCT.shortName} inventory</small><strong>{Math.round(data.finished)}</strong></span><span><small>Inbound speakers</small><strong>{Math.round(data.inbound)}</strong></span></div>}
+    {data.kind === 'retailer' && <div className="stockRows"><span><small>Sellable {PRODUCT.shortName}</small><strong>{Math.round(data.finished)}</strong></span><span><small>Speaker price</small><strong>${data.price}</strong></span><span><small>Backlog</small><strong>{Math.round(data.backlog)}</strong></span></div>}
+    {data.kind === 'customer' && <div className="stockRows"><span><small>Speaker demand</small><strong>{Math.round(data.demand)}</strong></span><span><small>Orders fulfilled</small><strong>{Math.round(data.fulfilled)}</strong></span><span><small>Waiting</small><strong>{Math.round(data.backlog)}</strong></span></div>}
     {data.kind !== 'customer' && <Handle type="source" position={Position.Right} />}
   </div>
 })
@@ -50,7 +51,7 @@ export function SupplyMap({ game }: { game: GameState }) {
       const shipments = game.shipments.filter((item) => item.source === edge.source && item.target === edge.target)
       const quantity = shipments.reduce((sum, item) => sum + item.quantity, 0)
       const earliest = shipments.length ? Math.min(...shipments.map((item) => item.arrivalDay)) : 0
-      const material = shipments[0]?.materialType === 'raw-materials' ? 'raw' : 'FG'
+      const material = shipments[0]?.materialType === 'raw-materials' ? 'component kits' : PRODUCT.shortName
       return { id: edge.id, source: edge.source, target: edge.target, type: 'shipment', label: quantity ? `${Math.round(quantity)} ${material} · ETA d${earliest}` : '', data: { active: quantity > 0, delayed: shipments.some((item) => item.status === 'delayed') } }
     })
     return { nodes: [...supplierNodes, ...facilityNodes], edges }

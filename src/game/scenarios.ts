@@ -1,4 +1,5 @@
 import type { ScenarioDefinition, SupplierOption, SupplyEdge, SupplyNode, TransportRoute } from './types'
+import { PRODUCT } from './product'
 
 export const suppliers: SupplierOption[] = [
   { id: 'atlas', name: 'Atlas Materials', unitCost: 48, dailyCapacity: 75, reliability: 0.91, qualityYield: 0.96, leadTime: 3, routeId: 'ocean-west', routeLabel: 'Ocean West', portExposed: true },
@@ -14,9 +15,9 @@ export const transportRoutes: TransportRoute[] = [
 ]
 
 export const baseNodes: SupplyNode[] = [
-  { id: 'factory', name: 'Factory', kind: 'manufacturer', capacity: 80, inventory: { rawMaterials: 120, finishedGoods: 35, inTransit: 0, backlog: 0, safetyStock: 45 }, position: { x: 330, y: 145 } },
+  { id: 'factory', name: `${PRODUCT.shortName} Factory`, kind: 'manufacturer', capacity: 80, inventory: { rawMaterials: 120, finishedGoods: 35, inTransit: 0, backlog: 0, safetyStock: 45 }, position: { x: 330, y: 145 } },
   { id: 'dc', name: 'Distribution Center', kind: 'distribution', capacity: 120, inventory: { rawMaterials: 0, finishedGoods: 100, inTransit: 0, backlog: 0, safetyStock: 55 }, position: { x: 590, y: 145 } },
-  { id: 'retailer', name: 'Retailer', kind: 'retailer', capacity: 110, inventory: { rawMaterials: 0, finishedGoods: 85, inTransit: 0, backlog: 0, safetyStock: 40 }, position: { x: 850, y: 145 } },
+  { id: 'retailer', name: `${PRODUCT.shortName} Retail`, kind: 'retailer', capacity: 110, inventory: { rawMaterials: 0, finishedGoods: 85, inTransit: 0, backlog: 0, safetyStock: 40 }, position: { x: 850, y: 145 } },
   { id: 'customer', name: 'Customers', kind: 'customer', capacity: 0, inventory: { rawMaterials: 0, finishedGoods: 0, inTransit: 0, backlog: 0, safetyStock: 0 }, position: { x: 1110, y: 145 } },
 ]
 
@@ -33,9 +34,9 @@ const demandModel = (baseDemand: number, peak = 1, slope = 0) => ({ baseDemand, 
 export const scenarios: ScenarioDefinition[] = [
   {
     id: 'january', month: 'January', name: 'Foundations', subtitle: 'See every inventory stage clearly', difficulty: 'Guided', totalDays: 30, startWeekdayIndex: 3, seed: 1101,
-    description: 'Learn how raw materials become finished goods and move toward customers.', startingCash: 115000, startingRawMaterials: 135, startingFactoryFinished: 45, startingDcInventory: 115, startingRetailInventory: 95,
+    description: `Learn how component kits become ${PRODUCT.pluralName} and move toward customers.`, startingCash: 115000, startingRawMaterials: 135, startingFactoryFinished: 45, startingDcInventory: 115, startingRetailInventory: 95,
     demandModel: demandModel(40), forecastBias: 1, events: [{ id: 'jan-promo', name: 'Campus promotion', description: 'A planned campaign lifts demand by 15%.', kind: 'market', visibility: 'planned', startDay: 18, endDay: 20, demandMultiplier: 1.15 }], riskSignals: [],
-    objectives: ['Finish above 90% service', 'Keep raw and finished inventory balanced', 'Finish with positive operating profit'], introducedMechanics: ['Inventory flow', 'Production', 'Daily pricing'],
+    objectives: ['Finish above 90% service', 'Keep component and speaker inventory balanced', 'Finish with positive operating profit'], introducedMechanics: ['Inventory flow', 'Production', 'Daily pricing'],
   },
   {
     id: 'february', month: 'February', name: 'Supplier Mix', subtitle: 'Diversify with purpose', difficulty: 'Core', totalDays: 30, startWeekdayIndex: 6, seed: 2202,
@@ -46,7 +47,7 @@ export const scenarios: ScenarioDefinition[] = [
   },
   {
     id: 'march', month: 'March', name: 'Market Pricing', subtitle: 'Shape profitable demand', difficulty: 'Intermediate', totalDays: 30, startWeekdayIndex: 6, seed: 3303,
-    description: 'Use selling price to balance demand, margin, inventory, and service.', startingCash: 110000, startingRawMaterials: 120, startingFactoryFinished: 38, startingDcInventory: 100, startingRetailInventory: 82,
+    description: `Set the ${PRODUCT.shortName} price to balance demand, margin, inventory, and service.`, startingCash: 110000, startingRawMaterials: 120, startingFactoryFinished: 38, startingDcInventory: 100, startingRetailInventory: 82,
     demandModel: demandModel(47, 1.1, 0.003), forecastBias: 1.02, events: [{ id: 'march-festival', name: 'Spring festival', description: 'A known local event raises category demand.', kind: 'market', visibility: 'planned', startDay: 20, endDay: 23, demandMultiplier: 1.22 }], riskSignals: [],
     objectives: ['Achieve a healthy average margin', 'Keep service above 87%', 'Avoid pricing-driven excess inventory'], introducedMechanics: ['Demand elasticity', 'Price-aware forecasts', 'Margin management'],
   },

@@ -1,10 +1,10 @@
 # Supply-Chain Management Game
 
-An interactive educational strategy game about managing an end-to-end supply chain. Players balance supplier sourcing, production, inventory, transportation, pricing, customer demand, and operational risk across a six-month campaign.
+An interactive educational strategy game about managing the end-to-end supply chain for the **Cobalt One Smart Speaker**. Players balance component sourcing, speaker production, inventory, transportation, pricing, customer demand, and operational risk across a six-month campaign.
 
 **Play the deployed game:** [scm.npaing.com](https://scm.npaing.com)
 
-The game is designed to make cause and effect visible: raw materials take time to arrive, factories convert them into finished goods, inventory moves through distribution and retail, and upstream decisions eventually affect customers.
+The game is designed to make cause and effect visible: speaker component kits take time to arrive, the factory converts them into Cobalt One speakers, inventory moves through distribution and retail, and upstream decisions eventually affect customers.
 
 ## Gameplay
 
@@ -26,7 +26,7 @@ Controls are introduced progressively so early chapters remain approachable.
 
 | Chapter | Month | Focus |
 | --- | --- | --- |
-| 1 | January — Foundations | Raw materials, finished goods, production, and inventory flow |
+| 1 | January — Foundations | Component kits, Cobalt One speakers, production, and inventory flow |
 | 2 | February — Supplier Mix | Supplier allocation, cost, reliability, quality, and lead time |
 | 3 | March — Market Pricing | Price elasticity, demand forecasting, revenue, and margin |
 | 4 | April — Port Pressure | Transportation choices, route exposure, and shipment delays |
@@ -51,8 +51,8 @@ The live network can be panned and zoomed with the mouse. Individual suppliers a
 Facility cards distinguish between:
 
 - Supplier capacity and order allocation
-- Factory raw-material inventory
-- Factory finished-goods inventory
+- Factory speaker-component inventory
+- Factory Cobalt One speaker inventory
 - Inbound shipments
 - Distribution and retail inventory
 - Customer demand, fulfillment, backlog, and lost sales

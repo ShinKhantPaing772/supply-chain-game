@@ -19,6 +19,7 @@ describe('Supply-Chain Management Game', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: /can you keep the chain moving/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /start the campaign/i })).toBeInTheDocument()
+    expect(screen.getByText(/Cobalt One Smart Speaker supply chain/i)).toBeInTheDocument()
     expect(screen.getByText('Foundations')).toBeInTheDocument()
     expect(screen.getByText('Supplier Mix')).toBeInTheDocument()
     expect(screen.getByText('Market Pricing')).toBeInTheDocument()

@@ -1,10 +1,11 @@
 import { ArrowRight, Boxes, Factory, LineChart, ShieldCheck, Truck, X } from 'lucide-react'
 import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
+import { PRODUCT } from '../game/product'
 
 const steps = [
-  { icon: Boxes, eyebrow: '01 / FLOW', title: 'Every inventory stage has a role', text: 'Supplier capacity creates inbound raw materials. The factory converts them into finished goods that move through distribution and retail.' },
-  { icon: Factory, eyebrow: '02 / PLAN', title: 'Balance every stage', text: 'Split supplier orders, schedule production, and release finished goods. A buffer in the wrong place cannot serve the customer.' },
+  { icon: Boxes, eyebrow: '01 / FLOW', title: 'Every inventory stage has a role', text: `Suppliers ship component kits. The factory converts them into ${PRODUCT.pluralName} that move through distribution and retail.` },
+  { icon: Factory, eyebrow: '02 / PLAN', title: `Build the ${PRODUCT.shortName}`, text: `Split component orders, schedule ${PRODUCT.shortName} production, and release finished speakers. A buffer in the wrong place cannot serve the customer.` },
   { icon: Truck, eyebrow: '03 / TIME', title: 'Lead time changes outcomes', text: 'Shipments already in transit cannot teleport. Expediting is faster, but the extra cost can erase your margin.' },
   { icon: ShieldCheck, eyebrow: '04 / ADAPT', title: 'Signals are not spoilers', text: 'Risk signals indicate uncertainty, not a guaranteed event. Diversification and inventory buffers improve resilience at a cost.' },
   { icon: LineChart, eyebrow: '05 / WIN', title: 'Price shapes demand', text: 'A lower price can grow demand but squeeze margin. Your score rewards service, profit, resilience, and efficient inventory.' },
