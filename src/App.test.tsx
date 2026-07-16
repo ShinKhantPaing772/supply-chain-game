@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
-import { createGame } from './game/engine'
+import { advanceDay, createGame } from './game/engine'
 import { scenarioById } from './game/scenarios'
 import { useGameStore } from './store/gameStore'
 import { createSavedGameSession } from './store/sessionPersistence'
@@ -61,5 +61,17 @@ describe('Supply-Chain Management Game', () => {
     fireEvent(window, new HashChangeEvent('hashchange'))
     expect(screen.getByRole('heading', { name: 'Terms of Service' })).toBeInTheDocument()
     expect(screen.getByText(/educational simulation/i)).toBeInTheDocument()
+  })
+
+  it('presents the stricter grading standard in the final report', () => {
+    let game = createGame(scenarioById('january'))
+    while (game.status === 'playing') game = advanceDay(game)
+    useGameStore.setState({ screen: 'debrief', game, activeScenarioId: 'january' })
+
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: 'Developing Planner' })).toBeInTheDocument()
+    expect(screen.getByText(/Leader standard: 85\+/i)).toBeInTheDocument()
+    expect(screen.getByText(/needs substantial improvement/i)).toBeInTheDocument()
   })
 })

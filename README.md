@@ -94,7 +94,17 @@ Each completed month receives a score based on:
 - Resilience during disruptions
 - Inventory efficiency
 
-The final report reveals the event timeline and highlights the decisions that most affected the outcome.
+Scoring uses demanding performance gates: service points accelerate only above 70%, profit points require an operating margin above 8%, resilience is judged against the weakest operating days, and inventory must remain within a narrower efficient range.
+
+| Score | Grade |
+| --- | --- |
+| 95–100 | Elite Supply Chain Strategist |
+| 85–94 | Operations Leader |
+| 72–84 | Planning Professional |
+| 58–71 | Developing Planner |
+| Below 58 | Needs Improvement |
+
+The final report reveals the event timeline, gives a direct performance assessment, and highlights the decisions that most affected the outcome.
 
 ## Technology
 

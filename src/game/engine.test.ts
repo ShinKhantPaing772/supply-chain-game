@@ -88,4 +88,17 @@ describe('expanded supply-chain simulation', () => {
     expect(score.total).toBeLessThanOrEqual(100)
     expect(calculateForecastAccuracy(game.forecastHistory)).toBeGreaterThan(0)
   })
+
+  it('requires active optimization to reach leader-level scores', () => {
+    const defaultScores = ['january', 'february', 'march', 'april', 'may', 'june'].map((scenarioId) => {
+      let game = createGame(scenarioById(scenarioId))
+      while (game.status === 'playing') game = advanceDay(game)
+      return calculateScore(game)
+    })
+
+    expect(Math.max(...defaultScores.map((score) => score.total))).toBeLessThan(85)
+    expect(defaultScores[0].total).toBeLessThan(70)
+    expect(defaultScores[0].profit).toBeLessThan(5)
+    expect(defaultScores.every((score) => score.grade !== 'Operations Leader' && score.grade !== 'Elite Supply Chain Strategist')).toBe(true)
+  })
 })

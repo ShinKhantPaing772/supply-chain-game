@@ -277,15 +277,24 @@ export function calculateKpis(history: DailySnapshot[]): KpiSummary {
 
 export function calculateScore(state: GameState, scenario = scenarioById(state.scenarioId)): ScoreBreakdown {
   const kpis = calculateKpis(state.history)
-  const service = clamp(Math.round(kpis.serviceLevel * 0.4), 0, 40)
-  const profit = clamp(Math.round(18 + kpis.profit / 7000), 0, 25)
+  const serviceProgress = clamp((kpis.serviceLevel - 70) / 30, 0, 1)
+  const service = clamp(Math.round(Math.pow(serviceProgress, 1.15) * 40), 0, 40)
+  const operatingMargin = kpis.totalRevenue ? kpis.profit / kpis.totalRevenue : 0
+  const profitProgress = clamp((operatingMargin - 0.08) / 0.32, 0, 1)
+  const profit = clamp(Math.round(Math.pow(profitProgress, 1.2) * 25), 0, 25)
   const disruptionDays = state.history.filter((item) => item.activeEvents.some((event) => event.kind !== 'market'))
-  const resilienceRate = disruptionDays.length ? disruptionDays.reduce((sum, item) => sum + item.fulfilled / Math.max(1, item.demand), 0) / disruptionDays.length : kpis.serviceLevel / 100
-  const resilience = clamp(Math.round(resilienceRate * 20), 0, 20)
+  const dailyFillRates = state.history.map((item) => item.fulfilled / Math.max(1, item.demand)).sort((a, b) => a - b)
+  const worstDayCount = Math.min(dailyFillRates.length, Math.max(3, Math.ceil(dailyFillRates.length * 0.2)))
+  const operatingFloor = dailyFillRates.slice(0, worstDayCount).reduce((sum, rate) => sum + rate, 0) / Math.max(1, worstDayCount)
+  const disruptionRate = disruptionDays.length ? disruptionDays.reduce((sum, item) => sum + item.fulfilled / Math.max(1, item.demand), 0) / disruptionDays.length : operatingFloor
+  const resilienceRate = disruptionDays.length ? disruptionRate * 0.7 + operatingFloor * 0.3 : operatingFloor
+  const resilienceProgress = clamp((resilienceRate - 0.7) / 0.3, 0, 1)
+  const resilience = clamp(Math.round(Math.pow(resilienceProgress, 1.15) * 20), 0, 20)
   const targetInventory = scenario.demandModel.baseDemand * 4.5
-  const efficiencyRatio = 1 - Math.abs(kpis.averageInventory - targetInventory) / Math.max(targetInventory, 1)
-  const inventoryEfficiency = clamp(Math.round(efficiencyRatio * 15), 0, 15)
+  const inventoryDeviation = Math.abs(kpis.averageInventory - targetInventory) / Math.max(targetInventory, 1)
+  const efficiencyProgress = clamp(1 - inventoryDeviation / 0.65, 0, 1)
+  const inventoryEfficiency = clamp(Math.round(Math.pow(efficiencyProgress, 1.1) * 15), 0, 15)
   const total = service + profit + resilience + inventoryEfficiency
-  const grade = total >= 90 ? 'Supply Chain Strategist' : total >= 75 ? 'Operations Leader' : total >= 60 ? 'Planning Professional' : 'Developing Planner'
+  const grade = total >= 95 ? 'Elite Supply Chain Strategist' : total >= 85 ? 'Operations Leader' : total >= 72 ? 'Planning Professional' : total >= 58 ? 'Developing Planner' : 'Needs Improvement'
   return { total, service, profit, resilience, inventoryEfficiency, grade }
 }
